@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+<item android:id="@+id/item_open"
+    android:title="打开新文件"
+    android:orderInCategory="1"></item>
+    <item android:id="@+id/item_add_label"
+        android:title="添加书签"
+        android:orderInCategory="2"></item>
+    <item android:id="@+id/item_load_label"
+        android:title="载入书签"
+        android:orderInCategory="3"></item>
+    <item android:id="@+id/item_quit"
+        android:title="退出"
+        android:orderInCategory="200"></item>
+</menu>

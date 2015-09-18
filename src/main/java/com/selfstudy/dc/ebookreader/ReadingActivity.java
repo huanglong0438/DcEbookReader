@@ -138,6 +138,7 @@ public class ReadingActivity extends ActionBarActivity {
                         int height = load_label_sp.getInt("height"+which, -1);
                         if (height == -1) {
                             Toast.makeText(getApplicationContext(), " È«©≤ª¥Ê‘⁄", Toast.LENGTH_SHORT).show();
+
                             return;
                         }
                         sv_content.scrollTo(sv_content.getScrollX(), y);
