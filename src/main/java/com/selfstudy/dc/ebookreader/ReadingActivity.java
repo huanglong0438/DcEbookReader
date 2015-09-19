@@ -3,16 +3,29 @@ package com.selfstudy.dc.ebookreader;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
+import android.util.TypedValue;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.baoyz.swipemenulistview.SwipeMenu;
+import com.baoyz.swipemenulistview.SwipeMenuCreator;
+import com.baoyz.swipemenulistview.SwipeMenuItem;
+import com.baoyz.swipemenulistview.SwipeMenuListView;
 
 import java.io.UnsupportedEncodingException;
 import java.text.DecimalFormat;
@@ -124,29 +137,60 @@ public class ReadingActivity extends ActionBarActivity {
                 AlertDialog.Builder load_label_builder = new AlertDialog.Builder(this);
                 ArrayList<String> labels = new ArrayList<String>();
 
+                //filter the /n in the load_label_digest, and add a /n at last of every digest.
                 for(int i=0;i<nlabel;i++){
                     String load_label_digest = load_label_sp.getString("digest"+i,null);
                     if(load_label_digest != null){
-                        labels.add(load_label_digest + "...");
+                        labels.add(i + load_label_digest + "...");
                     }
                 }
-                String slabels[] = (String[]) labels.toArray(new String[labels.size()]);
-                load_label_builder.setItems(slabels, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        int y = load_label_sp.getInt("y"+which, 0);
-                        int height = load_label_sp.getInt("height"+which, -1);
-                        if (height == -1) {
-                            Toast.makeText(getApplicationContext(), "书签不存在", Toast.LENGTH_SHORT).show();
+                String slabels[] = labels.toArray(new String[labels.size()]);
 
-                            return;
-                        }
-                        sv_content.scrollTo(sv_content.getScrollX(), y);
-                        Toast.makeText(getApplicationContext(), "载入书签成功", Toast.LENGTH_SHORT).show();
-                    }
-                });
+                LayoutInflater inflater = getLayoutInflater();
+                View view = inflater.inflate(R.layout.label_layout, null);
+                final SwipeMenuListView listView = (SwipeMenuListView) view.findViewById(R.id.label_listView);
                 load_label_builder.setTitle("选择要载入的书签");
+
+                SwipeMenuCreator creator = new SwipeMenuCreator() {
+
+                    @Override
+                    public void create(SwipeMenu menu) {
+                        SwipeMenuItem deleteItem = new SwipeMenuItem(
+                                getApplicationContext());
+                        deleteItem.setBackground(new ColorDrawable(Color.rgb(0xF9,
+                                0x3F, 0x25)));
+                        deleteItem.setWidth(dp2px(listView, 90));
+                        deleteItem.setTitle("delete");
+                        deleteItem.setTitleSize(18);
+                        deleteItem.setTitleColor(Color.WHITE);
+                        menu.addMenuItem(deleteItem);
+                    }
+                };
+
+                listView.setMenuCreator(creator);
+                ArrayAdapter<String> adapter = new ArrayAdapter<>(ReadingActivity.this,android.R.layout.simple_expandable_list_item_1,slabels);
+                listView.setAdapter(adapter);
+
+                load_label_builder.setView(view);
                 load_label_builder.show();
+
+
+//                load_label_builder.setItems(slabels, new DialogInterface.OnClickListener() {
+//                    @Override
+//                    public void onClick(DialogInterface dialog, int which) {
+//                        int y = load_label_sp.getInt("y"+which, 0);
+//                        int height = load_label_sp.getInt("height"+which, -1);
+//                        if (height == -1) {
+//                            Toast.makeText(getApplicationContext(), "书签不存在", Toast.LENGTH_SHORT).show();
+//
+//                            return;
+//                        }
+//                        sv_content.scrollTo(sv_content.getScrollX(), y);
+//                        Toast.makeText(getApplicationContext(), "载入书签成功", Toast.LENGTH_SHORT).show();
+//                    }
+//                });
+//                load_label_builder.setTitle("选择要载入的书签");
+//                load_label_builder.show();
 
                 break;
             case R.id.item_quit:
@@ -182,6 +226,13 @@ public class ReadingActivity extends ActionBarActivity {
             });
 
         }
+    }
+
+
+
+
+    private int dp2px(SwipeMenuListView listView ,int dp) {
+        return (int) TypedValue.applyDimension(1, (float) dp, listView.getContext().getResources().getDisplayMetrics());
     }
 
 }
