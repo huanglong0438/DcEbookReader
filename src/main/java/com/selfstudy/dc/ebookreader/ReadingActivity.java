@@ -16,6 +16,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.LinearLayout;
 import android.widget.ListView;
@@ -86,7 +87,7 @@ public class ReadingActivity extends ActionBarActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.menu_reading,menu);
+        getMenuInflater().inflate(R.menu.menu_reading, menu);
         return true;
     }
 
@@ -127,21 +128,23 @@ public class ReadingActivity extends ActionBarActivity {
                 //open a new dialog and show all labels.
                 //it's better to set my own view to the AlertDialog. use SwipeMenuListView on the github.
                 final SharedPreferences load_label_sp = getSharedPreferences(filename, MODE_PRIVATE);
-                nlabel = load_label_sp.getInt("nlabel",-1);
+                nlabel = load_label_sp.getInt("nlabel",0);
 
-                if(nlabel == -1){
+                if(nlabel == 0){
                     Toast.makeText(this,"尚未保存过书签",Toast.LENGTH_SHORT).show();
                     return super.onOptionsItemSelected(item);
                 }
 
-                AlertDialog.Builder load_label_builder = new AlertDialog.Builder(this);
+                final AlertDialog.Builder load_label_builder = new AlertDialog.Builder(this);
+                final AlertDialog dialog = load_label_builder.create();
                 ArrayList<String> labels = new ArrayList<String>();
 
                 //filter the /n in the load_label_digest, and add a /n at last of every digest.
                 for(int i=0;i<nlabel;i++){
                     String load_label_digest = load_label_sp.getString("digest"+i,null);
                     if(load_label_digest != null){
-                        labels.add(i + load_label_digest + "...");
+                        load_label_digest = load_label_digest.replaceAll("\\n"," ");
+                        labels.add(i +". "+ load_label_digest + "...\n");
                     }
                 }
                 String slabels[] = labels.toArray(new String[labels.size()]);
@@ -149,10 +152,9 @@ public class ReadingActivity extends ActionBarActivity {
                 LayoutInflater inflater = getLayoutInflater();
                 View view = inflater.inflate(R.layout.label_layout, null);
                 final SwipeMenuListView listView = (SwipeMenuListView) view.findViewById(R.id.label_listView);
-                load_label_builder.setTitle("选择要载入的书签");
+                dialog.setTitle("选择要载入的书签");
 
                 SwipeMenuCreator creator = new SwipeMenuCreator() {
-
                     @Override
                     public void create(SwipeMenu menu) {
                         SwipeMenuItem deleteItem = new SwipeMenuItem(
@@ -171,26 +173,39 @@ public class ReadingActivity extends ActionBarActivity {
                 ArrayAdapter<String> adapter = new ArrayAdapter<>(ReadingActivity.this,android.R.layout.simple_expandable_list_item_1,slabels);
                 listView.setAdapter(adapter);
 
-                load_label_builder.setView(view);
-                load_label_builder.show();
+                listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                    @Override
+                    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                        int y = load_label_sp.getInt("y" + position, 0);
+                        int height = load_label_sp.getInt("height" + position, -1);
+                        if (height == -1) {
+                            Toast.makeText(getApplicationContext(), "书签不存在", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                        sv_content.scrollTo(sv_content.getScrollX(), y);
+                        dialog.dismiss();
+                        Toast.makeText(getApplicationContext(), "载入书签成功", Toast.LENGTH_SHORT).show();
+                    }
+                });
+                listView.setOnMenuItemClickListener(new SwipeMenuListView.OnMenuItemClickListener() {
+                    @Override
+                    public boolean onMenuItemClick(int position, SwipeMenu swipeMenu, int index) {
+                        switch (index){
+                            case 0:
+                                //delete
+                                SharedPreferences.Editor load_label_editor = load_label_sp.edit();
+                                deleteLabel(load_label_sp,position);
+                                rollUp(load_label_sp,position);
+                                Toast.makeText(getApplicationContext(),"成功删除书签",Toast.LENGTH_SHORT).show();
+                                break;
+                        }
+                        dialog.dismiss();
+                        return false;
+                    }
+                });
 
-
-//                load_label_builder.setItems(slabels, new DialogInterface.OnClickListener() {
-//                    @Override
-//                    public void onClick(DialogInterface dialog, int which) {
-//                        int y = load_label_sp.getInt("y"+which, 0);
-//                        int height = load_label_sp.getInt("height"+which, -1);
-//                        if (height == -1) {
-//                            Toast.makeText(getApplicationContext(), "书签不存在", Toast.LENGTH_SHORT).show();
-//
-//                            return;
-//                        }
-//                        sv_content.scrollTo(sv_content.getScrollX(), y);
-//                        Toast.makeText(getApplicationContext(), "载入书签成功", Toast.LENGTH_SHORT).show();
-//                    }
-//                });
-//                load_label_builder.setTitle("选择要载入的书签");
-//                load_label_builder.show();
+                dialog.setView(view);
+                dialog.show();
 
                 break;
             case R.id.item_quit:
@@ -208,6 +223,45 @@ public class ReadingActivity extends ActionBarActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private void rollUp(SharedPreferences sp, int position) {
+        int nlabel = sp.getInt("nlabel", -1);
+        SharedPreferences.Editor editor = sp.edit();
+        if (nlabel == -1){
+            return;
+        }
+        for(int i=position;i<nlabel;i++){
+            int y = sp.getInt("y"+(i+1),-1);
+            int height = sp.getInt("height" + (i +1),-1);
+            String digest = sp.getString("digest"+(i+1),null);
+
+            if(y == -1) return;
+            if(height == -1) return;
+            if(digest == null) return;
+
+            editor.putInt("y"+i,y);
+            editor.remove("y"+(i+1));
+            editor.putInt("height"+i,height);
+            editor.remove("height"+(i+1));
+            editor.putString("digest"+i,digest);
+            editor.remove("digest"+(i+1));
+
+            editor.apply();
+        }
+    }
+
+    private void deleteLabel(SharedPreferences sp, int position) {
+        SharedPreferences.Editor editor = sp.edit();
+        editor.remove("y" + position);
+        editor.remove("height" + position);
+        editor.remove("digest" + position);
+        int nlabel = sp.getInt("nlabel",-1);
+        if(nlabel == -1){
+            return;
+        }
+        editor.putInt("nlabel",--nlabel);
+        editor.apply();
     }
 
 
