@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:descendantFocusability="blocksDescendants">
+    <ImageView
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:id="@+id/changebggridview_ImageItem"
+        android:layout_centerHorizontal="true"
+        android:src="@drawable/background"
+        android:scaleType="fitXY"
+        />
+    <RadioButton
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/changebggridview_ImageItem"
+        android:id="@+id/changebggridview_RadioItem"
+        android:clickable="false"
+        android:layout_centerHorizontal="true"/>
+
+</RelativeLayout>
